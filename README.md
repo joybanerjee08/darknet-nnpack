@@ -1,6 +1,6 @@
 Forked from https://github.com/digitalbrain79/darknet-nnpack/
 
-# Darknet with NNPACK *with modifications*
+# Darknet with NNPACK *and additional mods*
 NNPACK was used to optimize [Darknet](https://github.com/pjreddie/darknet) without using a GPU. It is useful for embedded devices using ARM CPUs.
 
 Idein's [qmkl](https://github.com/Idein/qmkl) is also used to accelerate the SGEMM using the GPU. This is slower than NNPACK on NEON-capable devices, and primarily useful for ARM CPUs without NEON.
