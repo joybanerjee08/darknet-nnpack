@@ -7,7 +7,10 @@
 #include <float.h>
 #include <limits.h>
 #include <time.h>
-
+#include <dirent.h>
+#include "utils.h"
+#include <errno.h>
+#include <math.h>
 #include "utils.h"
 
 
@@ -346,7 +349,7 @@ char *fgetl(FILE *fp)
             size *= 2;
             line = realloc(line, size*sizeof(char));
             if(!line) {
-                printf("%ld\n", size);
+                printf("%d\n", size);
                 malloc_error();
             }
         }
@@ -413,6 +416,233 @@ void write_all(int fd, char *buffer, size_t bytes)
         size_t next = write(fd, buffer + n, bytes-n);
         if(next <= 0) error("write failed");
         n += next;
+    }
+}
+
+//Included by Rafael Padilla (Feb 20th 2018)
+char *find_arg_next(int argc, char* argv[], char *arg, char *def)
+{
+    int i;
+    for(i = 0; i < argc; ++i) {
+        if(!argv[i]) continue;
+        if(0==strcmp(argv[i], arg)) {
+	   def = copy_string(argv[i+1]);
+           break;
+        }
+    }
+    return def;
+}
+
+//Included by Rafael Padilla (Feb 20th 2018)
+char *find_argument(int argc, char **argv, char *arg, char *def)
+{
+    int i;
+    for(i = 0; i < argc; ++i) {
+         if (ends_with(argv[i], arg) == 1)
+         {
+            def = copy_string(argv[i]);
+            break;
+        }
+    }
+    return def;
+}
+
+//Included by Rafael Padilla (Feb 20th 2018)
+int ends_with(char *str, char *suffix)
+{
+    if (!str || !suffix)
+        return 0;
+    size_t lenstr = strlen(str);
+    size_t lensuffix = strlen(suffix);
+    if (lensuffix >  lenstr)
+        return 0;
+    return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
+}
+
+//Included by Rafael Padilla (Feb 20th 2018)
+char *find_filename_no_ext(char *fullPath, char *def)
+{
+    char *bar = "/";
+    char *file = find_filename(fullPath, bar);
+    if (0!=strcmp(bar, file)) {
+        int idx = last_index_of(file, '.');
+        if (idx != -1) {
+            char dest[idx];
+            memcpy(dest, &file[0], idx );
+            dest[idx] = '\0';
+            def = copy_string(dest);
+        }
+    }
+    return def;
+}
+
+//Included by Rafael Padilla (Feb 20th 2018)
+char *find_filename(char *fullPath, char *def)
+{
+    int lidx = last_index_of(fullPath, '/');
+    if (lidx != -1) {
+        int s = strlen(fullPath);
+        char dest[s-lidx];
+        memcpy( dest, &fullPath[lidx+1], s-lidx );
+        dest[s-lidx-1] = '\0';
+        def = copy_string(dest);
+        return def;
+    }
+    return def;
+}
+
+//Included by Rafael Padilla (Feb 20th 2018)
+int last_index_of(char *s, char target)
+{
+   int ret = -1;
+   int curIdx = 0;
+   while(s[curIdx] != '\0')
+   {
+        if (s[curIdx] == target) ret = curIdx;
+        curIdx++;
+   }
+   return ret;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+//Included by Rafael Padilla (Mar 7th 2018)
+list *get_files_by_extension(char *extension, char *path)
+{
+    list *my_list = make_list();
+    DIR *d;
+    struct dirent *dir;
+    d = opendir(path);
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            if (ends_with(dir->d_name, extension)) {
+                list_insert(my_list, dir->d_name);
+            }
+        }
+        closedir(d);
+    }
+    return my_list; 
+}
+
+//Included by Rafael Padilla (Apr 20th 2018)
+int directory_exists(char *dir)
+{
+    DIR* directory = opendir(dir);
+    if (directory)
+    {
+        /* Directory exists. */
+        closedir(directory);
+        return 1;
+    }
+    else if (ENOENT == errno)
+        return 0;
+        /* Directory does not exist. */
+    else
+        return -1;
+        /* opendir() failed for some other reason. */
+}
+
+//Included by Rafael Padilla (Apr 20th 2018)
+//Threshold can be:
+// single 'threshold' value or 'begin,step,end' values
+//Return 1: success
+//Return 0: fail
+int *split_threshold_ranges(char *s, double items[], int *len, char **errorMsg)
+// arguments are passed into functions by value (except arrays which is treated as pointers)
+{
+    char *errorMsg0 = "Wrong number of parameters -thresh";
+    char *errorMsg1 = "Begin threshold value must be decimal between 0 to 1";
+    char *errorMsg2 = "End threshold value must be decimal between 0 to 1";
+    char *errorMsg3 = "Begin threshold must be lower than end threshold";
+    char *errorMsg4 = "Threshold must be decimal between 0 to 1";
+    char *errorMsg5 = "Step threshold value must be decimal between 0 and 1";
+    char *errorMsg6 = "Step threshold value must be higher than 0 and less or equal than 1";
+
+    list *mylist = split_str(s, ',');
+    char **listChar = (char **)list_to_array(mylist);
+    int qteParam = mylist->size;
+
+    // for (int i =0; i < qteParam; i++)
+    //     printf("\nlistChar[%d]: %s", i, listChar[i]);
+
+    if (qteParam == 1)
+    {
+        double res = -1;
+        // Check if the only parameter is double (valid)
+        if ((isValidDouble(listChar[0], &res) == 0) || (res > 1 || res < 0))
+        {
+            *errorMsg = errorMsg4;
+            return 0;
+        }
+        else
+        {
+            items[0] = res;
+            *len = 1;
+        }
+    }
+    else if (qteParam == 3)
+    {
+        //Threshold: (begin,interval,end)
+        double begin;
+        double step;
+        double end;
+
+        //Validate begin
+        if ((isValidDouble(listChar[0], &begin) == 0) || (begin > 1 || begin < 0))
+        {
+            *errorMsg = errorMsg1;
+            return 0;  
+        }
+        //Validate end
+        if ((isValidDouble(listChar[2], &end) == 0) || (end > 1 || end < 0))
+        {
+            *errorMsg = errorMsg2;
+            return 0;
+        }
+        //Validate begin and end        
+        if (begin > end) 
+        {
+            *errorMsg = errorMsg3;
+            return 0;
+        }
+        //Validate step
+        if ((isValidDouble(listChar[1], &step) == 0) || (step <= 0 || step > 1))
+        {
+            *errorMsg = errorMsg6;
+            return 0;
+        }     
+        int count = 1;
+        double buff = begin;
+        while(1)
+        {   
+            buff = step + buff;
+            if ((float)buff>(float)end){
+                break;
+                }
+            count++;
+        }
+        buff = begin;
+        for (int i = 0; i< count; i++)
+        {
+            items[i] = buff;
+            buff = step + buff;            
+        }
+        *len = count;
+        return 1; // success
+    }
+    else 
+    {
+        *errorMsg = errorMsg0;
+        return 0; //Missing parameters
     }
 }
 
@@ -709,6 +939,17 @@ float rand_scale(float s)
     return 1./scale;
 }
 
+void copystring(char *target, char *source)
+{
+   while (*source) 
+   {
+      *target = *source;
+      source++;
+      target++;
+   }
+   *target = '\0';
+}
+
 float **one_hot_encode(float *a, int n, int k)
 {
     int i;
@@ -719,5 +960,26 @@ float **one_hot_encode(float *a, int n, int k)
         t[i][index] = 1;
     }
     return t;
+}
+
+int isValidDouble(char *to_convert, double *res)
+{
+    char *end;
+    double val = strtod(to_convert, &end);
+    if (end != to_convert)
+    {
+        if (*end != '\0')
+        {
+            // printf("\nconversion failed (EINVAL, ERANGE)");
+            return 0;
+        }
+        *res = val;
+        return 1;
+    }
+    else
+    {
+        //  printf("\nconversion failed (EINVAL, ERANGE)");
+        return 0;
+    }
 }
 

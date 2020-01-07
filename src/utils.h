@@ -23,10 +23,20 @@ char int_to_alphanum(int i);
 int read_int(int fd);
 void write_int(int fd, int n);
 void read_all(int fd, char *buffer, size_t bytes);
+int ends_with(char *str, char *suffix);
 void write_all(int fd, char *buffer, size_t bytes);
 int read_all_fail(int fd, char *buffer, size_t bytes);
 int write_all_fail(int fd, char *buffer, size_t bytes);
 void find_replace(char *str, char *orig, char *rep, char *output);
+char *find_arg_next(int argc, char* argv[], char *arg, char *def);
+char *find_argument(int argc, char **argv, char *arg, char *def);
+int ends_with(char *str, char *suffix);
+char *find_filename_no_ext(char *fullPath, char *def);
+char *find_filename(char *fullPath, char *def);
+int last_index_of(char *s, char target);
+list *get_files_by_extension(char *extension, char *path);
+int directory_exists(char *dir);
+int *split_threshold_ranges(char *s, double items[], int *len, char **errorMsg);
 void malloc_error();
 void file_error(char *s);
 void strip(char *s);
@@ -48,6 +58,8 @@ float **one_hot_encode(float *a, int n, int k);
 float sec(clock_t clocks);
 void print_statistics(float *a, int n);
 int int_index(int *a, int val, int n);
+void copystring(char *target, char *source);
+int isValidDouble(char *to_convert, double *res);
 
 #endif
 
