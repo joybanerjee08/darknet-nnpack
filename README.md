@@ -28,6 +28,8 @@ Then run this code :
 You'll find a 'result' folder in your directory which will contain all the text files and the inferred images with bboxes. 
 The text files will be of each objects detected in images of train.txt with the following format 'class, probability, relative x, relative y, relative w, relative h' in each line.
 
+PS : By default this program will print the names of all the images inferred one after another, if you want to stop that then go to src/image.c and comment the print statement in line 260.
+
 ## Build Instructions
 Log in to Raspberry Pi using SSH.<br/>
 Install [PeachPy](https://github.com/Maratyszcza/PeachPy) and [confu](https://github.com/Maratyszcza/confu)
