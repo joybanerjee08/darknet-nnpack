@@ -1,11 +1,32 @@
 Forked from https://github.com/digitalbrain79/darknet-nnpack/
 
-# Darknet with NNPACK
+# Darknet with NNPACK *with modifications*
 NNPACK was used to optimize [Darknet](https://github.com/pjreddie/darknet) without using a GPU. It is useful for embedded devices using ARM CPUs.
 
 Idein's [qmkl](https://github.com/Idein/qmkl) is also used to accelerate the SGEMM using the GPU. This is slower than NNPACK on NEON-capable devices, and primarily useful for ARM CPUs without NEON.
 
 The NNPACK implementation in Darknet was improved to use transform-based convolution computation, allowing for 40%+ faster inference performance on non-initial frames. This is most useful for repeated inferences, ie. video, or if Darknet is left open to continue processing input instead of allowed to terminate after processing input.
+
+
+## New Modifications
+
+I added [rafaelpadilla's YOLO Modifications](https://github.com/rafaelpadilla/darknet) to this, and it basically takes in a folder of images as an input and outputs images with bbox in png and detections in a txt format. I ran this on Raspberry Pi 4 and it successfully works. I trained a tiny yolo model in google colab (with the [AlexeyAB's code](https://github.com/AlexeyAB/darknet)), and ran the inference in Raspberry Pi 4. For running the modifications, check the rafaelpadilla's github page for details, but I'll give a short method below.
+
+To run this, create a txt file that has paths of all the images you want to infer (say train.txt). Then create another file that has the names of all the categories you trained your NN with (say category.names). Then create the data file (say nn.data) and write the following : 
+```
+classes = <number of categories>
+train  = train.txt
+test  = train.txt
+names = category.names
+backup = backup/
+results = results
+```
+
+Then run this code : 
+`./darknet testimages nn.data nn.cfg nn.weights -savetxt -saveimg`
+
+You'll find a 'result' folder in your directory which will contain all the text files and the inferred images with bboxes. 
+The text files will be of each objects detected in images of train.txt with the following format 'class, probability, relative x, relative y, relative w, relative h' in each line.
 
 ## Build Instructions
 Log in to Raspberry Pi using SSH.<br/>
